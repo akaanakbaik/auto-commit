@@ -1,4 +1,4 @@
-name: Auto Random Worker
+name: Auto Random Worker Optimized
 
 on:
   schedule:
@@ -6,13 +6,11 @@ on:
     # Dari jam 23:00 UTC (06:00 WIB) sampai jam 13:59 UTC (20:59 WIB)
     - cron: '*/6 23,0-13 * * *'
   
-  # Fitur ini memungkinkan kamu menjalankan workflow secara manual untuk testing
   workflow_dispatch: 
 
 jobs:
   auto-commit:
     runs-on: ubuntu-latest
-    # Memberikan izin bot untuk menulis/push ke repositori
     permissions:
       contents: write 
 
@@ -20,37 +18,53 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1 # Menghemat resource, hanya mengambil riwayat terakhir
 
-      - name: Random Commit Logic
+      - name: Random Commit Logic & Execution
         run: |
           echo "Menjalankan pengecekan probabilitas commit..."
           
-          # Menghasilkan angka acak antara 0 hingga 99
+          # Probabilitas 60% untuk lanjut
           CHANCE=$(( $RANDOM % 100 ))
-          
-          # Probabilitas 60% untuk commit (Angka 0-59 = commit, 60-99 = skip)
-          # Ini akan menghasilkan rata-rata ~90 commit per hari secara natural
           if [ $CHANCE -ge 60 ]; then
-            echo "Sistem sedang istirahat. Skip commit kali ini untuk menjaga randomness."
+            echo "Sistem istirahat. Skip commit kali ini untuk menjaga randomness."
             exit 0
           fi
           
           echo "Waktunya bekerja! Menyiapkan commit..."
           
-          # Konfigurasi user Git (menggunakan bot resmi GitHub Actions)
+          # Konfigurasi user Git
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
-          # Mengatur Timezone ke WIB untuk pencatatan di dalam file
+          # Mengatur Timezone ke WIB
           export TZ='Asia/Jakarta'
           CURRENT_TIME=$(date '+%Y-%m-%d %H:%M:%S')
           
-          # Menulis ke file dummy agar ada perubahan terdeteksi oleh Git
-          # File ini bebas mau diganti namanya, di sini menggunakan '.activity_log'
-          echo "Aktivitas tercatat pada: $CURRENT_TIME WIB" >> .activity_log
+          # Membuat/Menimpa file JSON dengan hash acak agar Git mendeteksi perubahan
+          # File ini tidak akan bertambah besar ukurannya
+          echo "{\"last_update\": \"$CURRENT_TIME\", \"worker_id\": \"$RANDOM$RANDOM\"}" > worker-status.json
           
-          # Proses Commit dan Push
-          git add .activity_log
-          git commit -m "chore: auto update worker log $CURRENT_TIME"
+          # Daftar pesan commit acak untuk menyamarkan aktivitas bot
+          MESSAGES=(
+            "chore: update worker status"
+            "fix: sync data tracker"
+            "docs: refresh timestamp"
+            "refactor: auto clean up state"
+            "ci: trigger background job"
+            "style: format tracking file"
+            "feat: update metric logs"
+          )
+          
+          # Memilih pesan secara acak
+          RANDOM_MSG=${MESSAGES[$RANDOM % ${#MESSAGES[@]}]}
+          
+          # Proses Add & Commit
+          git add worker-status.json
+          git commit -m "$RANDOM_MSG"
+          
+          # Menarik data terbaru dari GitHub untuk mencegah error jika ada commit manual
+          git pull --rebase origin main
+          
+          # Push ke repositori
           git push
