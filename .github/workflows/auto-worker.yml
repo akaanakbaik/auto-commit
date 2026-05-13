@@ -1,70 +1,87 @@
-name: Auto Random Worker Optimized
+name: Ultimate Auto Worker
 
 on:
   schedule:
-    # Berjalan setiap 6 menit 
-    # Dari jam 23:00 UTC (06:00 WIB) sampai jam 13:59 UTC (20:59 WIB)
+    # Berjalan tiap 6 menit, antara 23:00 - 13:59 UTC (06:00 - 20:59 WIB)
     - cron: '*/6 23,0-13 * * *'
   
   workflow_dispatch: 
 
 jobs:
-  auto-commit:
+  ultimate-commit:
     runs-on: ubuntu-latest
     permissions:
       contents: write 
 
     steps:
-      - name: Checkout Repository
+      - name: 🚀 Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1 # Menghemat resource, hanya mengambil riwayat terakhir
+          fetch-depth: 1 # Super ringan
 
-      - name: Random Commit Logic & Execution
+      - name: 🤖 Ultimate Random Logic & Execution
         run: |
-          echo "Menjalankan pengecekan probabilitas commit..."
+          echo "Memulai siklus pekerja ultimate..."
           
-          # Probabilitas 60% untuk lanjut
+          # 1. Jitter Delay (Anti-Robot)
+          # Menambahkan jeda acak 1 sampai 120 detik agar waktu commit tidak statis
+          DELAY=$(( $RANDOM % 120 ))
+          echo "Menunggu $DELAY detik agar aktivitas terlihat natural..."
+          sleep $DELAY
+          
+          # 2. Probability Check (Target 78-101 commit / hari)
           CHANCE=$(( $RANDOM % 100 ))
           if [ $CHANCE -ge 60 ]; then
-            echo "Sistem istirahat. Skip commit kali ini untuk menjaga randomness."
+            echo "Probabilitas: Sistem istirahat. Menghemat energi."
             exit 0
           fi
           
-          echo "Waktunya bekerja! Menyiapkan commit..."
+          echo "Probabilitas tembus! Menyiapkan pembaruan dinamis..."
           
-          # Konfigurasi user Git
+          # 3. Konfigurasi Git Bot
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
-          # Mengatur Timezone ke WIB
           export TZ='Asia/Jakarta'
           CURRENT_TIME=$(date '+%Y-%m-%d %H:%M:%S')
           
-          # Membuat/Menimpa file JSON dengan hash acak agar Git mendeteksi perubahan
-          # File ini tidak akan bertambah besar ukurannya
-          echo "{\"last_update\": \"$CURRENT_TIME\", \"worker_id\": \"$RANDOM$RANDOM\"}" > worker-status.json
-          
-          # Daftar pesan commit acak untuk menyamarkan aktivitas bot
-          MESSAGES=(
-            "chore: update worker status"
-            "fix: sync data tracker"
-            "docs: refresh timestamp"
-            "refactor: auto clean up state"
-            "ci: trigger background job"
-            "style: format tracking file"
-            "feat: update metric logs"
+          # 4. Dynamic Multi-File Rotation
+          # Bot memilih secara acak file mana yang akan diupdate hari ini
+          FILES=(
+            "data/system-status.json"
+            "logs/daily-worker.log"
+            "cache/session-temp.txt"
+            "config/health-check.yml"
           )
+          TARGET_FILE=${FILES[$RANDOM % ${#FILES[@]}]}
           
-          # Memilih pesan secara acak
+          # Otomatis membuat folder jika belum ada
+          mkdir -p $(dirname $TARGET_FILE)
+          
+          # Menimpa file dengan hash baru agar tidak bengkak ukurannya
+          echo "{\"last_sync\": \"$CURRENT_TIME WIB\", \"process_id\": \"$RANDOM-$RANDOM\"}" > $TARGET_FILE
+          
+          # 5. Pesan Commit Acak Profesional
+          MESSAGES=(
+            "chore(sync): update $TARGET_FILE"
+            "fix(tracker): auto refresh timestamp data"
+            "docs(log): record background activity"
+            "refactor(state): clean and update temporary cache"
+            "ci(worker): execute scheduled rotation"
+            "style(format): normalize generated output"
+            "feat(cron): heartbeat ping from server"
+            "perf(core): optimize background data refresh"
+          )
           RANDOM_MSG=${MESSAGES[$RANDOM % ${#MESSAGES[@]}]}
           
-          # Proses Add & Commit
-          git add worker-status.json
+          # 6. Auto-Detect Branch & Commit
+          CURRENT_BRANCH=${GITHUB_REF_NAME:-main}
+          
+          git add $TARGET_FILE
           git commit -m "$RANDOM_MSG"
           
-          # Menarik data terbaru dari GitHub untuk mencegah error jika ada commit manual
-          git pull --rebase origin main
+          # 7. Fail-Safe Push (Auto-Rebase & Retry)
+          # Mencegah conflict jika ada aktivitas manual dan memastikan push berhasil
+          git pull --rebase origin $CURRENT_BRANCH
+          git push origin $CURRENT_BRANCH || (echo "Push gagal, mencoba ulang..." && sleep 10 && git push origin $CURRENT_BRANCH)
           
-          # Push ke repositori
-          git push
+          echo "Pekerjaan selesai dengan sukses pada $CURRENT_TIME WIB"
